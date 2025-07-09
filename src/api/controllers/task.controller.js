@@ -27,7 +27,7 @@ class TaskController {
       }
 
       const result = await this.createTaskUseCase.execute(req.body, req.user._id);
-      
+
       res.status(201).json({
         success: true,
         message: 'Tarea creada exitosamente',
@@ -35,7 +35,7 @@ class TaskController {
       });
     } catch (error) {
       console.error('Error al crear tarea:', error);
-      
+
       res.status(400).json({
         success: false,
         message: error.message || 'Error al crear tarea'
@@ -46,13 +46,13 @@ class TaskController {
   async getUserTasks(req, res) {
     try {
       const { page, limit, completed } = req.query;
-      
+
       const result = await this.getUserTasksUseCase.execute(req.user._id, {
         page,
         limit,
         completed
       });
-      
+
       res.status(200).json({
         success: true,
         message: 'Tareas obtenidas exitosamente',
@@ -61,7 +61,7 @@ class TaskController {
       });
     } catch (error) {
       console.error('Error al obtener tareas:', error);
-      
+
       res.status(500).json({
         success: false,
         message: error.message || 'Error al obtener tareas'
@@ -86,7 +86,7 @@ class TaskController {
         req.user._id,
         req.body
       );
-      
+
       res.status(200).json({
         success: true,
         message: 'Tarea actualizada exitosamente',
@@ -94,7 +94,7 @@ class TaskController {
       });
     } catch (error) {
       console.error('Error al actualizar tarea:', error);
-      
+
       const statusCode = error.message === 'Tarea no encontrada' ? 404 : 400;
       res.status(statusCode).json({
         success: false,
@@ -109,22 +109,25 @@ class TaskController {
         req.params.id,
         req.user._id
       );
-      
+
       res.status(200).json({
         success: true,
-        message: result.message,
-        data: result.task
+        message: result.message
       });
     } catch (error) {
       console.error('Error al eliminar tarea:', error);
-      
-      const statusCode = error.message === 'Tarea no encontrada' ? 404 : 400;
+
+      let statusCode = 400;
+      if (error.message === 'Tarea no encontrada') statusCode = 404;
+      if (error.message === 'No tienes permiso para eliminar esta tarea') statusCode = 403;
+
       res.status(statusCode).json({
         success: false,
         message: error.message || 'Error al eliminar tarea'
       });
     }
   }
+
 }
 
 module.exports = TaskController;
