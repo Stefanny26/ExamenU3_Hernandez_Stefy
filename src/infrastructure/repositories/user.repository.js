@@ -26,6 +26,52 @@ class UserRepository {
     }
   }
 
+  async findByGoogleId(googleId) {
+    try {
+      return await User.findOne({ googleId });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findOrCreateFromOAuth(oauthData) {
+    try {
+      const { googleId, email, name, avatar } = oauthData;
+      
+      // Primero buscar por googleId
+      let user = await this.findByGoogleId(googleId);
+      if (user) {
+        // Actualizar avatar si es diferente
+        if (user.avatar !== avatar) {
+          user.avatar = avatar;
+          await user.save();
+        }
+        return user;
+      }
+
+      // Si no existe por googleId, buscar por email
+      user = await this.findByEmail(email);
+      if (user) {
+        // Usuario existe con este email pero sin OAuth, vincular cuenta
+        user.googleId = googleId;
+        user.avatar = avatar;
+        user.provider = 'google';
+        return await user.save();
+      }
+
+      // Crear nuevo usuario
+      return await this.create({
+        googleId,
+        email,
+        name,
+        avatar,
+        provider: 'google'
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async update(id, updateData) {
     try {
       return await User.findByIdAndUpdate(id, updateData, { 

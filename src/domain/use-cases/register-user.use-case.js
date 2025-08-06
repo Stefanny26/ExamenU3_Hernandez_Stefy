@@ -1,8 +1,9 @@
 const jwt = require('jsonwebtoken');
+const UserRepository = require('../../infrastructure/repositories/user.repository');
 
 class RegisterUserUseCase {
-  constructor(userRepository) {
-    this.userRepository = userRepository;
+  constructor() {
+    this.userRepository = new UserRepository();
   }
 
   async execute(userData) {
@@ -26,12 +27,16 @@ class RegisterUserUseCase {
       const token = jwt.sign(
         { id: user._id, email: user.email },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN }
+        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
       );
 
       return {
         success: true,
-        user,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email
+        },
         token
       };
     } catch (error) {

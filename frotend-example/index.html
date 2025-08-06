@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do App con OAuth 2.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .auth-section {
+            margin-bottom: 2rem;
+        }
+        
+        .auth-section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e1e1;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+        
+        .btn-google {
+            background: #db4437;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-google:hover {
+            background: #c23321;
+            transform: translateY(-1px);
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+            color: #666;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e1e1e1;
+        }
+        
+        .divider span {
+            background: white;
+            padding: 0 1rem;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .user-details {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tasks-section {
+            margin-top: 2rem;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border: 1px solid #e1e1e1;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .task-completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            margin-left: 0.25rem;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c53030;
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .success {
+            background: #f0fff4;
+            color: #38a169;
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>📝 To-Do App</h1>
+            <p>Con OAuth 2.0 y Arquitectura Limpia</p>
+        </div>
+        
+        <div id="error-message" class="error hidden"></div>
+        <div id="success-message" class="success hidden"></div>
+        
+        <!-- Sección de autenticación (visible cuando no está logueado) -->
+        <div id="auth-section">
+            <div class="auth-section">
+                <h2>Iniciar Sesión</h2>
+                
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+                </form>
+                
+                <div class="divider">
+                    <span>o</span>
+                </div>
+                
+                <a href="http://localhost:3000/api/auth/google" class="btn btn-google">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continuar con Google
+                </a>
+                
+                <button onclick="demoGoogleLogin()" class="btn" style="background: #34a853; color: white; margin-top: 0.5rem;">
+                    🔬 Demo: Simular Login Google
+                </button>
+                
+                <div class="divider">
+                    <span>¿No tienes cuenta?</span>
+                </div>
+                
+                <button id="show-register" class="btn btn-primary" style="background: #48bb78;">Registrarse</button>
+            </div>
+            
+            <!-- Formulario de registro (oculto por defecto) -->
+            <div id="register-section" class="auth-section hidden">
+                <h2>Registrarse</h2>
+                
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="reg-name">Nombre</label>
+                        <input type="text" id="reg-name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-email">Email</label>
+                        <input type="email" id="reg-email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-password">Contraseña</label>
+                        <input type="password" id="reg-password" name="password" required minlength="6">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="background: #48bb78;">Crear Cuenta</button>
+                    <button type="button" id="show-login" class="btn" style="background: #e2e8f0; color: #2d3748;">Volver al Login</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Sección principal (visible cuando está logueado) -->
+        <div id="main-section" class="hidden">
+            <div id="user-info" class="user-info">
+                <div class="user-details">
+                    <img id="user-avatar" class="user-avatar" src="" alt="Avatar" style="display: none;">
+                    <div>
+                        <strong id="user-name"></strong><br>
+                        <small id="user-email"></small>
+                        <small id="user-provider" style="background: #e2e8f0; padding: 0.2rem 0.5rem; border-radius: 3px; margin-left: 0.5rem;"></small>
+                    </div>
+                </div>
+                <button id="logout" class="btn" style="background: #fed7d7; color: #c53030;">Cerrar Sesión</button>
+            </div>
+            
+            <div class="auth-section">
+                <h2>Crear Nueva Tarea</h2>
+                <form id="task-form">
+                    <div class="form-group">
+                        <label for="task-title">Título</label>
+                        <input type="text" id="task-title" name="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="task-description">Descripción (opcional)</label>
+                        <input type="text" id="task-description" name="description">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Crear Tarea</button>
+                </form>
+            </div>
+            
+            <div id="tasks-section" class="tasks-section">
+                <h2>Mis Tareas</h2>
+                <div id="tasks-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let authToken = localStorage.getItem('authToken');
+        let currentUser = null;
+        
+        // Elementos del DOM
+        const authSection = document.getElementById('auth-section');
+        const mainSection = document.getElementById('main-section');
+        const registerSection = document.getElementById('register-section');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si hay un token en la URL (callback de OAuth)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            const errorFromUrl = urlParams.get('error');
+            
+            if (tokenFromUrl) {
+                localStorage.setItem('authToken', tokenFromUrl);
+                authToken = tokenFromUrl;
+                // Limpiar la URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                showSuccess('¡Inicio de sesión con Google exitoso!');
+            }
+            
+            if (errorFromUrl) {
+                showError('Error en la autenticación con Google');
+            }
+            
+            if (authToken) {
+                loadUserProfile();
+            }
+            
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            // Formulario de login
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            
+            // Formulario de registro
+            document.getElementById('register-form').addEventListener('submit', handleRegister);
+            
+            // Formulario de tareas
+            document.getElementById('task-form').addEventListener('submit', handleCreateTask);
+            
+            // Botones de navegación
+            document.getElementById('show-register').addEventListener('click', showRegisterForm);
+            document.getElementById('show-login').addEventListener('click', showLoginForm);
+            
+            // Logout
+            document.getElementById('logout').addEventListener('click', handleLogout);
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: formData.get('email'),
+                        password: formData.get('password')
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    localStorage.setItem('authToken', result.data.token);
+                    authToken = result.data.token;
+                    currentUser = result.data.user;
+                    showMainSection();
+                    showSuccess('¡Inicio de sesión exitoso!');
+                    loadTasks();
+                } else {
+                    showError(result.message || 'Error al iniciar sesión');
+                }
+            } catch (error) {
+                showError('Error de conexión');
+                console.error('Error:', error);
+            }
+        }
+        
+        async function handleRegister(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: formData.get('name'),
+                        email: formData.get('email'),
+                        password: formData.get('password')
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    localStorage.setItem('authToken', result.data.token);
+                    authToken = result.data.token;
+                    currentUser = result.data.user;
+                    showMainSection();
+                    showSuccess('¡Registro exitoso!');
+                    loadTasks();
+                } else {
+                    showError(result.message || 'Error al registrarse');
+                }
+            } catch (error) {
+                showError('Error de conexión');
+                console.error('Error:', error);
+            }
+        }
+        
+        async function loadUserProfile() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentUser = result.data.user;
+                    showMainSection();
+                    loadTasks();
+                } else {
+                    handleLogout();
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                handleLogout();
+            }
+        }
+        
+        async function handleCreateTask(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title: formData.get('title'),
+                        description: formData.get('description')
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('¡Tarea creada exitosamente!');
+                    e.target.reset();
+                    loadTasks();
+                } else {
+                    showError(result.message || 'Error al crear tarea');
+                }
+            } catch (error) {
+                showError('Error de conexión');
+                console.error('Error:', error);
+            }
+        }
+        
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayTasks(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+        
+        function displayTasks(tasks) {
+            const tasksList = document.getElementById('tasks-list');
+            
+            if (!tasks.length) {
+                tasksList.innerHTML = '<p style="text-align: center; color: #666;">No tienes tareas aún</p>';
+                return;
+            }
+            
+            tasksList.innerHTML = tasks.map(task => `
+                <div class="task-item">
+                    <div class="${task.completed ? 'task-completed' : ''}">
+                        <strong>${task.title}</strong>
+                        ${task.description ? `<br><small>${task.description}</small>` : ''}
+                    </div>
+                    <div>
+                        <button onclick="toggleTask('${task._id}', ${!task.completed})" class="btn btn-small" style="background: ${task.completed ? '#fed7d7' : '#c6f6d5'}; color: ${task.completed ? '#c53030' : '#38a169'};">
+                            ${task.completed ? 'Desmarcar' : 'Completar'}
+                        </button>
+                        <button onclick="deleteTask('${task._id}')" class="btn btn-small" style="background: #fed7d7; color: #c53030;">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function toggleTask(taskId, completed) {
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ completed })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadTasks();
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('Error al actualizar tarea');
+            }
+        }
+        
+        async function deleteTask(taskId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('Tarea eliminada');
+                    loadTasks();
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError('Error al eliminar tarea');
+            }
+        }
+        
+        function showMainSection() {
+            authSection.classList.add('hidden');
+            mainSection.classList.remove('hidden');
+            
+            // Mostrar información del usuario
+            document.getElementById('user-name').textContent = currentUser.name;
+            document.getElementById('user-email').textContent = currentUser.email;
+            
+            if (currentUser.provider) {
+                document.getElementById('user-provider').textContent = currentUser.provider.toUpperCase();
+                document.getElementById('user-provider').style.display = 'inline';
+            }
+            
+            if (currentUser.avatar) {
+                const avatar = document.getElementById('user-avatar');
+                avatar.src = currentUser.avatar;
+                avatar.style.display = 'inline';
+            }
+        }
+        
+        function showRegisterForm() {
+            document.getElementById('login-form').parentElement.classList.add('hidden');
+            registerSection.classList.remove('hidden');
+        }
+        
+        function showLoginForm() {
+            registerSection.classList.add('hidden');
+            document.getElementById('login-form').parentElement.classList.remove('hidden');
+        }
+        
+        function handleLogout() {
+            localStorage.removeItem('authToken');
+            authToken = null;
+            currentUser = null;
+            mainSection.classList.add('hidden');
+            authSection.classList.remove('hidden');
+            showLoginForm();
+            showSuccess('Sesión cerrada exitosamente');
+        }
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            successMessage.classList.add('hidden');
+            setTimeout(() => {
+                errorMessage.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            setTimeout(() => {
+                successMessage.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // Función para simular login de Google (solo para demostración)
+        async function demoGoogleLogin() {
+            try {
+                showSuccess('🔬 Simulando login con Google...');
+                
+                // Simular datos de usuario de Google
+                const mockUser = {
+                    name: 'Usuario Demo Google',
+                    email: 'demo@gmail.com',
+                    provider: 'google',
+                    avatar: 'https://lh3.googleusercontent.com/a/default-user=s128-c0x00000000-cc-rp-mo-ba3'
+                };
+                
+                // Crear un token simulado (en la vida real vendría del servidor)
+                const mockToken = 'demo_jwt_token_' + Date.now();
+                
+                // Simular respuesta del servidor
+                localStorage.setItem('authToken', mockToken);
+                authToken = mockToken;
+                currentUser = mockUser;
+                
+                showMainSection();
+                showSuccess('¡Login con Google exitoso! (Simulado para demostración)');
+                
+                // Cargar tareas demo
+                displayDemoTasks();
+                
+            } catch (error) {
+                showError('Error en la simulación');
+                console.error('Error:', error);
+            }
+        }
+        
+        // Función para mostrar tareas de demostración
+        function displayDemoTasks() {
+            const demoTasks = [
+                {
+                    _id: 'demo1',
+                    title: 'Tarea de ejemplo 1',
+                    description: 'Esta es una tarea creada con OAuth de Google',
+                    completed: false
+                },
+                {
+                    _id: 'demo2',
+                    title: 'Tarea completada',
+                    description: 'Esta tarea ya está terminada',
+                    completed: true
+                }
+            ];
+            
+            displayTasks(demoTasks);
+        }
+    </script>
+</body>
+</html>

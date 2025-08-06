@@ -1,83 +1,76 @@
-const { validationResult } = require('express-validator');
-const UserRepository = require('../../infrastructure/repositories/user.repository');
-const RegisterUserUseCase = require('../../domain/use-cases/register-user.use-case');
-const LoginUserUseCase = require('../../domain/use-cases/login-user.use-case');
+const RegisterUser = require('../../domain/use-cases/register-user.use-case');
+const LoginUser = require('../../domain/use-cases/login-user.use-case');
+const OAuthLogin = require('../../domain/use-cases/oauth-login.use-case');
 
 class AuthController {
   constructor() {
-    this.userRepository = new UserRepository();
-    this.registerUserUseCase = new RegisterUserUseCase(this.userRepository);
-    this.loginUserUseCase = new LoginUserUseCase(this.userRepository);
+    this.registerUser = new RegisterUser();
+    this.loginUser = new LoginUser();
+    this.oauthLogin = new OAuthLogin();
   }
 
   async register(req, res) {
     try {
-      // Validar errores de express-validator
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Datos inválidos',
-          errors: errors.array()
-        });
-      }
-
-      const result = await this.registerUserUseCase.execute(req.body);
+      const { name, email, password } = req.body;
+      const result = await this.registerUser.execute({ name, email, password });
       
       res.status(201).json({
         success: true,
         message: 'Usuario registrado exitosamente',
-        data: {
-          user: result.user,
-          token: result.token
-        }
+        data: result
       });
     } catch (error) {
-      console.error('Error en registro:', error);
-      
-      // Manejar errores de duplicación de MongoDB
-      if (error.code === 11000) {
-        return res.status(400).json({
-          success: false,
-          message: 'El email ya está registrado'
-        });
-      }
-
       res.status(400).json({
         success: false,
-        message: error.message || 'Error al registrar usuario'
+        message: error.message
       });
     }
   }
 
   async login(req, res) {
     try {
-      // Validar errores de express-validator
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Datos inválidos',
-          errors: errors.array()
-        });
-      }
-
-      const result = await this.loginUserUseCase.execute(req.body);
+      const { email, password } = req.body;
+      const result = await this.loginUser.execute({ email, password });
       
       res.status(200).json({
         success: true,
-        message: 'Inicio de sesión exitoso',
+        message: 'Login exitoso',
+        data: result
+      });
+    } catch (error) {
+      res.status(401).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async googleCallback(req, res) {
+    try {
+      const user = req.user;
+      const result = await this.oauthLogin.execute(user);
+      
+      // Redirigir al frontend con el token
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${result.token}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      const errorUrl = `${process.env.FRONTEND_URL}/login?error=oauth_failed`;
+      res.redirect(errorUrl);
+    }
+  }
+
+  async getProfile(req, res) {
+    try {
+      res.status(200).json({
+        success: true,
         data: {
-          user: result.user,
-          token: result.token
+          user: req.user
         }
       });
     } catch (error) {
-      console.error('Error en login:', error);
-      
-      res.status(401).json({
+      res.status(500).json({
         success: false,
-        message: error.message || 'Error al iniciar sesión'
+        message: error.message
       });
     }
   }

@@ -18,8 +18,26 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'La contraseña es requerida'],
+    required: function() {
+      // La contraseña es requerida solo si no hay googleId
+      return !this.googleId;
+    },
     minlength: [6, 'La contraseña debe tener al menos 6 caracteres']
+  },
+  // Campos para OAuth
+  googleId: {
+    type: String,
+    sparse: true, // Permite que sea único pero también nulo
+    unique: true
+  },
+  avatar: {
+    type: String, // URL de la imagen de perfil
+    default: null
+  },
+  provider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local'
   }
 }, {
   timestamps: true
@@ -27,7 +45,8 @@ const userSchema = new mongoose.Schema({
 
 // Middleware para hashear la contraseña antes de guardar
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  // Solo hashear si hay password y ha sido modificado
+  if (!this.password || !this.isModified('password')) return next();
   
   try {
     const salt = await bcrypt.genSalt(12);
@@ -40,6 +59,7 @@ userSchema.pre('save', async function(next) {
 
 // Método para comparar contraseñas
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  if (!this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
