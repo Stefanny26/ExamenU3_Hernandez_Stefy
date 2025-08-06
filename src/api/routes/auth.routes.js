@@ -45,27 +45,59 @@ router.get('/profile', authMiddleware, (req, res) => {
   authController.getProfile(req, res);
 });
 
-// Ruta de prueba para simular OAuth de Google (solo para demostración)
+// 🧪 RUTA DE PRUEBA: Simular OAuth de Google (solo para demostración)
 router.get('/google/demo', async (req, res) => {
   try {
-    // Simular datos de usuario de Google
-    const mockUser = {
-      googleId: 'demo123456789',
-      email: 'demo@gmail.com',
-      name: 'Usuario Demo Google',
-      avatar: 'https://via.placeholder.com/150',
+    console.log('🧪 Iniciando demostración de OAuth Google...');
+    
+    // Simular datos de usuario de Google como los recibiría Passport
+    const mockOAuthData = {
+      googleId: `demo_${Date.now()}`,
+      email: 'demo.oauth@gmail.com',
+      name: 'Usuario Demo OAuth',
+      avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
       provider: 'google'
     };
 
-    const result = await authController.oauthLogin.execute(mockUser);
+    // Usar el caso de uso real de OAuth
+    const result = await authController.oauthLogin.execute(mockOAuthData);
     
-    // Redirigir al frontend con el token
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback?token=${result.token}`;
+    console.log('✅ Demo OAuth exitoso:', result.user);
+    
+    // Redirigir al frontend con el token (como haría Google)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const redirectUrl = `${frontendUrl}?token=${result.token}&oauth_demo=true`;
+    
     res.redirect(redirectUrl);
   } catch (error) {
-    const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=oauth_failed`;
+    console.error('❌ Error en demo OAuth:', error);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const errorUrl = `${frontendUrl}?error=oauth_demo_failed&message=${encodeURIComponent(error.message)}`;
     res.redirect(errorUrl);
   }
+});
+
+// 📊 RUTA DE ESTADO: Verificar configuración OAuth
+router.get('/oauth/status', (req, res) => {
+  const googleConfigured = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  
+  res.json({
+    success: true,
+    oauth: {
+      google: {
+        configured: googleConfigured,
+        clientId: googleConfigured ? 
+          process.env.GOOGLE_CLIENT_ID.substring(0, 20) + '...' : 
+          'No configurado',
+        callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'No configurado'
+      }
+    },
+    endpoints: {
+      login: '/api/auth/google',
+      callback: '/api/auth/google/callback',
+      demo: '/api/auth/google/demo'
+    }
+  });
 });
 
 module.exports = router;
