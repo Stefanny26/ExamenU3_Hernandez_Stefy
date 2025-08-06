@@ -325,6 +325,19 @@
                 <div id="tasks-list"></div>
             </div>
         </div>
+        
+        <!-- Sección de error OAuth (se muestra cuando hay errores) -->
+        <div id="oauth-error-section" class="hidden">
+            <div class="auth-section">
+                <h2 style="color: #c53030;">❌ Error de Autenticación</h2>
+                <div id="oauth-error-details" class="error">
+                    Error en el proceso de autenticación OAuth
+                </div>
+                <button onclick="returnToLogin()" class="btn btn-primary" style="margin-top: 1rem;">
+                    Volver al Login
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -345,25 +358,60 @@
             const urlParams = new URLSearchParams(window.location.search);
             const tokenFromUrl = urlParams.get('token');
             const errorFromUrl = urlParams.get('error');
+            const oauthSuccess = urlParams.get('oauth');
+            const oauthDemo = urlParams.get('oauth_demo');
             
-            if (tokenFromUrl) {
-                localStorage.setItem('authToken', tokenFromUrl);
-                authToken = tokenFromUrl;
-                // Limpiar la URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                showSuccess('¡Inicio de sesión con Google exitoso!');
+            // Manejar callback de OAuth exitoso
+            if (tokenFromUrl && oauthSuccess === 'success') {
+                handleOAuthCallback(tokenFromUrl, 'Google OAuth');
+                return;
             }
             
+            // Manejar callback de demo OAuth
+            if (tokenFromUrl && oauthDemo === 'true') {
+                handleOAuthCallback(tokenFromUrl, 'Demo OAuth');
+                return;
+            }
+            
+            // Manejar errores OAuth
             if (errorFromUrl) {
-                showError('Error en la autenticación con Google');
+                const errorMessage = urlParams.get('message') || 'Error en la autenticación OAuth';
+                showError(`Error OAuth: ${decodeURIComponent(errorMessage)}`);
+                // Limpiar la URL después de mostrar el error
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
             
-            if (authToken) {
+            // Si ya hay un token guardado, cargar perfil
+            if (authToken && !tokenFromUrl) {
                 loadUserProfile();
             }
             
             setupEventListeners();
         });
+        
+        // Función específica para manejar callback OAuth (según especificaciones de la tarea)
+        function handleOAuthCallback(token, source) {
+            try {
+                console.log(`📞 Procesando callback OAuth desde ${source}`);
+                
+                // 1. Guardar el token en localStorage
+                localStorage.setItem('authToken', token);
+                authToken = token;
+                
+                // 2. Limpiar la URL (como especifica la tarea)
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // 3. Mostrar mensaje de éxito
+                showSuccess(`¡Inicio de sesión exitoso con ${source}!`);
+                
+                // 4. Cargar perfil del usuario
+                loadUserProfile();
+                
+            } catch (error) {
+                console.error('Error procesando callback OAuth:', error);
+                showError('Error procesando la autenticación OAuth');
+            }
+        }
         
         function setupEventListeners() {
             // Formulario de login
@@ -603,19 +651,7 @@
             mainSection.classList.remove('hidden');
             
             // Mostrar información del usuario
-            document.getElementById('user-name').textContent = currentUser.name;
-            document.getElementById('user-email').textContent = currentUser.email;
-            
-            if (currentUser.provider) {
-                document.getElementById('user-provider').textContent = currentUser.provider.toUpperCase();
-                document.getElementById('user-provider').style.display = 'inline';
-            }
-            
-            if (currentUser.avatar) {
-                const avatar = document.getElementById('user-avatar');
-                avatar.src = currentUser.avatar;
-                avatar.style.display = 'inline';
-            }
+            displayUserInfo(currentUser);
         }
         
         function showRegisterForm() {
@@ -707,6 +743,62 @@
             ];
             
             displayTasks(demoTasks);
+        }
+        
+        // Función para manejar errores OAuth específicamente
+        function handleOAuthError() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            const message = urlParams.get('message');
+            
+            if (error === 'oauth_callback_failed' || error === 'oauth_failed') {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('main-section').classList.add('hidden');
+                document.getElementById('oauth-error-section').classList.remove('hidden');
+                
+                const errorDetails = document.getElementById('oauth-error-details');
+                errorDetails.textContent = message ? 
+                    decodeURIComponent(message) : 
+                    'Error desconocido en la autenticación OAuth';
+            }
+        }
+        
+        // Función para volver al login desde error OAuth
+        function returnToLogin() {
+            document.getElementById('oauth-error-section').classList.add('hidden');
+            document.getElementById('auth-section').classList.remove('hidden');
+            showLoginForm();
+            // Limpiar URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        // Función mejorada para mostrar información del usuario OAuth
+        function displayUserInfo(user) {
+            document.getElementById('user-name').textContent = user.name;
+            document.getElementById('user-email').textContent = user.email;
+            
+            // Mostrar badge del proveedor OAuth
+            const providerElement = document.getElementById('user-provider');
+            if (user.provider && user.provider !== 'local') {
+                providerElement.textContent = user.provider.toUpperCase();
+                providerElement.style.display = 'inline';
+                providerElement.style.background = '#e2e8f0';
+                providerElement.style.color = '#2d3748';
+                providerElement.style.padding = '0.2rem 0.5rem';
+                providerElement.style.borderRadius = '3px';
+                providerElement.style.fontSize = '0.7rem';
+                providerElement.style.marginLeft = '0.5rem';
+            }
+            
+            // Mostrar avatar si está disponible
+            const avatarElement = document.getElementById('user-avatar');
+            if (user.avatar) {
+                avatarElement.src = user.avatar;
+                avatarElement.style.display = 'inline';
+                avatarElement.onerror = function() {
+                    this.style.display = 'none';
+                };
+            }
         }
     </script>
 </body>

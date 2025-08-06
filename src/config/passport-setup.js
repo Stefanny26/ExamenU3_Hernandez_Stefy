@@ -6,7 +6,13 @@ const userRepository = new UserRepository();
 
 // Verificar que las variables de entorno estén configuradas
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-  console.warn('⚠️  Credenciales de Google OAuth no configuradas. El OAuth no funcionará.');
+  console.warn('⚠️  Credenciales de Google OAuth no configuradas completamente.');
+  console.warn('   Para obtener credenciales reales:');
+  console.warn('   1. Ve a https://console.cloud.google.com/');
+  console.warn('   2. Crea un proyecto');
+  console.warn('   3. Configura OAuth consent screen');
+  console.warn('   4. Crea credenciales OAuth 2.0');
+  console.warn('   5. Agrega http://localhost:3000/api/auth/google/callback como URI de redirección');
 }
 
 passport.use(new GoogleStrategy({
@@ -28,19 +34,49 @@ async (accessToken, refreshToken, profile, done) => {
       throw new Error('Perfil de Google incompleto: faltan ID o email');
     }
 
-    // Preparar datos del usuario para OAuth
-    const oauthData = {
-      googleId: profile.id,
+    const email = profile.emails[0].value;
+    const googleId = profile.id;
+
+    // 1. PASO: Verificar si el usuario ya existe por Google ID
+    let user = await userRepository.findByGoogleId(googleId);
+    
+    if (user) {
+      console.log('✅ Usuario existente encontrado por Google ID:', user.email);
+      // Actualizar avatar si es diferente
+      if (user.avatar !== profile.photos?.[0]?.value) {
+        user.avatar = profile.photos?.[0]?.value;
+        await user.save();
+      }
+      return done(null, user);
+    }
+
+    // 2. PASO: Verificar si existe un usuario con el mismo email (vinculación de cuenta)
+    user = await userRepository.findByEmail(email);
+    
+    if (user) {
+      console.log('🔗 Vinculando cuenta existente con Google OAuth:', user.email);
+      // Usuario existe con este email pero sin OAuth, vincular cuenta
+      user.googleId = googleId;
+      user.avatar = profile.photos?.[0]?.value || user.avatar;
+      user.provider = 'google';
+      user = await user.save();
+      return done(null, user);
+    }
+
+    // 3. PASO: Crear nuevo usuario desde Google OAuth
+    console.log('🆕 Creando nuevo usuario desde Google OAuth');
+    const newUserData = {
+      googleId: googleId,
+      email: email,
       name: profile.displayName || 'Usuario Google',
-      email: profile.emails[0].value,
       avatar: profile.photos?.[0]?.value || null,
       provider: 'google'
+      // No se requiere password para usuarios OAuth
     };
 
-    // Buscar o crear usuario
-    const user = await userRepository.findOrCreateFromOAuth(oauthData);
+    user = await userRepository.create(newUserData);
     
-    console.log('✅ Usuario OAuth procesado exitosamente:', {
+    console.log('✅ Nuevo usuario OAuth creado exitosamente:', {
       id: user._id,
       name: user.name,
       email: user.email,
@@ -48,6 +84,7 @@ async (accessToken, refreshToken, profile, done) => {
     });
 
     return done(null, user);
+    
   } catch (error) {
     console.error('❌ Error en estrategia de Google OAuth:', error);
     return done(error, false);

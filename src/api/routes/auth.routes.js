@@ -25,18 +25,42 @@ const authController = new AuthController();
 router.post('/register', registerValidation, validate, authController.register.bind(authController));
 router.post('/login', loginValidation, validate, authController.login.bind(authController));
 
-// Rutas de OAuth con Google
+// Rutas de OAuth con Google (siguiendo el estándar de la tarea)
 router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email']
+  scope: ['profile', 'email'] // Los datos que solicitamos a Google
 }));
 
 router.get('/google/callback',
   passport.authenticate('google', { 
     session: false, 
-    failureRedirect: `${process.env.FRONTEND_URL}/login?error=oauth_failed` 
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login-error`
   }),
-  (req, res) => {
-    authController.googleCallback(req, res);
+  async (req, res) => {
+    try {
+      // ¡Autenticación exitosa! `req.user` contiene los datos del usuario.
+      console.log('✅ Callback OAuth exitoso para usuario:', req.user.email);
+      
+      // Aquí es donde generamos nuestro propio JWT
+      const result = await authController.oauthLogin.execute(req.user);
+      
+      console.log('🎟️ JWT generado para usuario OAuth:', {
+        userId: result.user.id,
+        email: result.user.email,
+        provider: result.user.provider
+      });
+      
+      // Redirige al frontend con el token
+      // Una estrategia común es pasarlo como un query parameter
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const redirectUrl = `${frontendUrl}/auth/callback?token=${result.token}&oauth=success`;
+      
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('❌ Error en callback OAuth:', error);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const errorUrl = `${frontendUrl}/login-error?error=oauth_callback_failed&message=${encodeURIComponent(error.message)}`;
+      res.redirect(errorUrl);
+    }
   }
 );
 
