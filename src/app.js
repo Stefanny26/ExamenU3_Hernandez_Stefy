@@ -1,11 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const passport = require('passport');
+const path = require('path');
 const connectDB = require('./config/database');
-
-// Configurar estrategia de Passport antes de importar rutas
-require('./config/passport-setup');
 
 // Importar rutas
 const authRoutes = require('./api/routes/auth.routes');
@@ -19,22 +16,22 @@ connectDB();
 
 // Middlewares globales
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Inicializar Passport
-app.use(passport.initialize());
+// Servir archivos estáticos del frontend
+app.use(express.static(path.join(__dirname, '../public')));
 
-// Middleware para logging de requests
+// Inicializar middleware de logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Rutas
+// Rutas API
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 
@@ -52,8 +49,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Ruta por defecto
-app.get('/', (req, res) => {
+// Ruta API info (solo para /api)
+app.get('/api', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Bienvenido a la API de To-Do con Arquitectura Limpia y OAuth 2.0',
@@ -75,12 +72,22 @@ app.get('/', (req, res) => {
   });
 });
 
-// Middleware para rutas no encontradas
-app.use('*', (req, res) => {
+// Servir el frontend en la ruta principal
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Middleware para rutas no encontradas (solo para rutas API)
+app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Ruta no encontrada'
+    message: 'Ruta API no encontrada'
   });
+});
+
+// Para cualquier otra ruta, servir el frontend (SPA routing)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Middleware global para manejo de errores
@@ -100,8 +107,9 @@ const PORT = process.env.PORT || 3000;
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en puerto ${PORT}`);
+  console.log(`Frontend disponible en: http://localhost:${PORT}`);
+  console.log(`API disponible en: http://localhost:${PORT}/api`);
   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log(`OAuth Google configurado: ${!!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)}`);
 });
 

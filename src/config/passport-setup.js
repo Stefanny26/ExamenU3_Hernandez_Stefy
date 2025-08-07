@@ -18,24 +18,36 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL
+  callbackURL: process.env.GOOGLE_CALLBACK_URL,
+  scope: ['profile', 'email'],
+  passReqToCallback: false
 },
 async (accessToken, refreshToken, profile, done) => {
   try {
-    console.log('🔐 Procesando perfil de Google OAuth:', {
-      id: profile.id,
-      displayName: profile.displayName,
-      email: profile.emails?.[0]?.value,
-      photo: profile.photos?.[0]?.value
-    });
+    console.log('🔐 Recibido perfil de Google OAuth:');
+    console.log('- Profile ID:', profile.id);
+    console.log('- Display Name:', profile.displayName);
+    console.log('- Emails:', profile.emails);
+    console.log('- Photos:', profile.photos);
+    console.log('- Provider:', profile.provider);
 
     // Validar que tenemos los datos mínimos necesarios
-    if (!profile.id || !profile.emails?.[0]?.value) {
-      throw new Error('Perfil de Google incompleto: faltan ID o email');
+    if (!profile.id) {
+      console.error('❌ Error: Google no proporcionó un ID de usuario');
+      return done(new Error('Google no proporcionó un ID de usuario'), false);
+    }
+
+    if (!profile.emails || !profile.emails[0] || !profile.emails[0].value) {
+      console.error('❌ Error: Google no proporcionó un email válido');
+      return done(new Error('Google no proporcionó un email válido'), false);
     }
 
     const email = profile.emails[0].value;
     const googleId = profile.id;
+    const name = profile.displayName || profile.name?.givenName || 'Usuario Google';
+    const avatar = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
+
+    console.log('✅ Datos procesados:', { googleId, email, name, avatar });
 
     // 1. PASO: Verificar si el usuario ya existe por Google ID
     let user = await userRepository.findByGoogleId(googleId);
@@ -43,8 +55,8 @@ async (accessToken, refreshToken, profile, done) => {
     if (user) {
       console.log('✅ Usuario existente encontrado por Google ID:', user.email);
       // Actualizar avatar si es diferente
-      if (user.avatar !== profile.photos?.[0]?.value) {
-        user.avatar = profile.photos?.[0]?.value;
+      if (user.avatar !== avatar) {
+        user.avatar = avatar;
         await user.save();
       }
       return done(null, user);
@@ -57,7 +69,7 @@ async (accessToken, refreshToken, profile, done) => {
       console.log('🔗 Vinculando cuenta existente con Google OAuth:', user.email);
       // Usuario existe con este email pero sin OAuth, vincular cuenta
       user.googleId = googleId;
-      user.avatar = profile.photos?.[0]?.value || user.avatar;
+      user.avatar = avatar || user.avatar;
       user.provider = 'google';
       user = await user.save();
       return done(null, user);
@@ -68,8 +80,8 @@ async (accessToken, refreshToken, profile, done) => {
     const newUserData = {
       googleId: googleId,
       email: email,
-      name: profile.displayName || 'Usuario Google',
-      avatar: profile.photos?.[0]?.value || null,
+      name: name,
+      avatar: avatar,
       provider: 'google'
       // No se requiere password para usuarios OAuth
     };
