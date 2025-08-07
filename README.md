@@ -3,7 +3,7 @@
 
 **Autor:** Stefanny Hernández  
 **Institución:** Universidad de Las Fuerzas Armadas ESPE
-**Asignatura:** Desarrollo de Aplicaciones Web  
+**Asignatura:** Aplicaciones Distribuidas
 **Fecha:** 6 Agosto 2024
 
 ---
