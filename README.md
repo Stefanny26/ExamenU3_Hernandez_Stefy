@@ -4,7 +4,7 @@
 **Autor:** Stefanny Hernández  
 **Institución:** Universidad de Las Fuerzas Armadas ESPE
 **Asignatura:** Aplicaciones Distribuidas
-**Fecha:** 6 Agosto 2024
+**Fecha:** 6 Agosto 2025
 
 ---
 
@@ -863,9 +863,9 @@ Este proyecto demuestra competencias en:
 | **Nombre del Proyecto** | Sistema de Gestión de Tareas con OAuth 2.0 |
 | **Autor** | Stefanny Mishel Hernández Buenaño |
 | **Institución** | ESPE - Escuela Politécnica del Ejército |
-| **Asignatura** | Desarrollo de Aplicaciones Web |
+| **Asignatura** | Aplicaciones Distribuidad |
 | **Nivel** | Universitario |
-| **Fecha de Desarrollo** | Diciembre 2024 |
+| **Fecha de Desarrollo** | Agosto 2025 |
 | **Versión** | 2.0.0 |
 | **Licencia** | MIT |
 | **Estado** | Completado ✅ |
