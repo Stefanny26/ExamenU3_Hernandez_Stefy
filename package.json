@@ -6,7 +6,17 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "jest"
+    "test": "jest",
+    "setup": "npm install && cp .env.example .env",
+    "setup:dev": "npm install && cp .env.development .env",
+    "verify": "./verify-setup.sh",
+    "reset": "rm -rf node_modules package-lock.json && npm install",
+    "mongo:start": "sudo systemctl start mongod || mongod",
+    "mongo:status": "sudo systemctl status mongod || echo 'MongoDB no está configurado como servicio'",
+    "check:deps": "npm outdated",
+    "check:security": "npm audit",
+    "docs": "echo 'Documentación disponible en ./INSTALLATION.md, ./MIGRATION.md y ./README.md'",
+    "quick-start": "npm run setup && npm run verify && echo '🚀 Todo listo! Ejecuta: npm start'"
   },
   "keywords": [
     "nodejs",

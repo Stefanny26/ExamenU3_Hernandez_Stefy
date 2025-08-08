@@ -11,6 +11,10 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Pero mantener archivos de ejemplo
+!.env.example
+!.env.development
+
 # Logs
 logs
 *.log
