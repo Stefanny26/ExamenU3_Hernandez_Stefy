@@ -28,10 +28,15 @@ class TaskController {
 
       const result = await this.createTaskUseCase.execute(req.body, req.user._id);
 
+      // Emitir evento Socket.IO para notificación en tiempo real
+      if (req.socketServer) {
+        req.socketServer.emitTaskCreated(result.task, req.user);
+      }
+
       res.status(201).json({
         success: true,
         message: 'Tarea creada exitosamente',
-        data: result.task
+        task: result.task
       });
     } catch (error) {
       console.error('Error al crear tarea:', error);
@@ -87,10 +92,15 @@ class TaskController {
         req.body
       );
 
+      // Emitir evento Socket.IO para notificación en tiempo real
+      if (req.socketServer) {
+        req.socketServer.emitTaskUpdated(result.task, req.user);
+      }
+
       res.status(200).json({
         success: true,
         message: 'Tarea actualizada exitosamente',
-        data: result.task
+        task: result.task
       });
     } catch (error) {
       console.error('Error al actualizar tarea:', error);
@@ -105,10 +115,19 @@ class TaskController {
 
   async deleteTask(req, res) {
     try {
+      // Obtener la tarea antes de eliminarla para el nombre
+      const task = await this.taskRepository.findById(req.params.id);
+      const taskTitle = task ? task.title : 'Tarea desconocida';
+
       const result = await this.deleteTaskUseCase.execute(
         req.params.id,
         req.user._id
       );
+
+      // Emitir evento Socket.IO para notificación en tiempo real
+      if (req.socketServer) {
+        req.socketServer.emitTaskDeleted(taskTitle, req.user);
+      }
 
       res.status(200).json({
         success: true,

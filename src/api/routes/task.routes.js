@@ -41,4 +41,27 @@ router.delete('/:id', deleteTaskValidation, validate, (req, res) => {
   taskController.deleteTask(req, res);
 });
 
+// GET /api/tasks/realtime/stats - Obtener estadísticas de Socket.IO
+router.get('/realtime/stats', (req, res) => {
+  try {
+    const stats = req.socketServer ? req.socketServer.getStats() : {
+      connectedUsers: 0,
+      users: []
+    };
+    
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener estadísticas en tiempo real'
+    });
+  }
+});
+
 module.exports = router;

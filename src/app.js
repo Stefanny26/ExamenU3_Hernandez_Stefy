@@ -2,7 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
 const connectDB = require('./config/database');
+const socketServer = require('./socket/socket.server');
 
 // Importar rutas
 const authRoutes = require('./api/routes/auth.routes');
@@ -10,6 +12,9 @@ const taskRoutes = require('./api/routes/task.routes');
 
 // Crear aplicación Express
 const app = express();
+
+// Crear servidor HTTP para Socket.IO
+const server = http.createServer(app);
 
 // Conectar a base de datos
 connectDB();
@@ -24,6 +29,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // Servir archivos estáticos del frontend
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Inicializar Socket.IO
+socketServer.init(server);
+
+// Middleware para hacer el socketServer disponible en las rutas
+app.use((req, res, next) => {
+  req.socketServer = socketServer;
+  next();
+});
 
 // Inicializar middleware de logging
 app.use((req, res, next) => {
@@ -104,13 +118,14 @@ app.use((error, req, res, next) => {
 // Configurar puerto
 const PORT = process.env.PORT || 3000;
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor ejecutándose en puerto ${PORT}`);
-  console.log(`Frontend disponible en: http://localhost:${PORT}`);
-  console.log(`API disponible en: http://localhost:${PORT}/api`);
-  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`OAuth Google configurado: ${!!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)}`);
+// Iniciar servidor con Socket.IO
+server.listen(PORT, () => {
+  console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
+  console.log(`📱 Frontend disponible en: http://localhost:${PORT}`);
+  console.log(`🔌 API disponible en: http://localhost:${PORT}/api`);
+  console.log(`⚡ Socket.IO habilitado para notificaciones en tiempo real`);
+  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔐 OAuth Google configurado: ${!!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)}`);
 });
 
 module.exports = app;
