@@ -3,7 +3,7 @@
 nixPkgs = ["nodejs-18_x", "npm-9_x"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci --production"]
 
 [phases.build]
 cmds = ["echo 'No build step needed for this app'"]
@@ -12,5 +12,4 @@ cmds = ["echo 'No build step needed for this app'"]
 cmd = "node src/app.js"
 
 [variables]
-PORT = "8080"
 NODE_ENV = "production"

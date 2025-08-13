@@ -57,11 +57,27 @@ app.get('/health', (req, res) => {
     success: true,
     message: 'API funcionando correctamente',
     timestamp: new Date().toISOString(),
+    port: process.env.PORT,
+    environment: process.env.NODE_ENV,
     oauth: {
       google: {
         configured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
       }
     }
+  });
+});
+
+// Ruta específica para Railway debugging
+app.get('/railway-check', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Railway deployment working!',
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT,
+    environment: process.env.NODE_ENV,
+    host: req.get('host'),
+    protocol: req.protocol,
+    headers: req.headers
   });
 });
 
@@ -131,7 +147,13 @@ app.use((error, req, res, next) => {
 });
 
 // Configurar puerto
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
+
+console.log(`🔧 Configuración de puerto:`, {
+  PORT_ENV: process.env.PORT,
+  PORT_FINAL: PORT,
+  NODE_ENV: process.env.NODE_ENV
+});
 
 // Iniciar servidor con Socket.IO
 server.listen(PORT, '0.0.0.0', () => {
