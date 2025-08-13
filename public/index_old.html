@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cola de Preguntas para Charla - OAuth Demo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="styles.css"}
+    <style>
+        /* Estilos adicionales inspirados en el proyecto de referencia */
+        .oauth-demo-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .oauth-card {
+            background: white;
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+        }
+        
+        .oauth-card h1 {
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            font-size: 2rem;
+        }
+        
+        .oauth-card p {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .google-connect-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            min-width: 250px;
+            justify-content: center;
+        }
+        
+        .google-connect-btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(66, 133, 244, 0.3);
+        }
+        
+        .demo-btn {
+            background: #34a853;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            margin-top: 0.5rem;
+        }
+        
+        .demo-btn:hover {
+            background: #2d8e47;
+            transform: translateY(-1px);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34a853;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+<body>
+    <div id="app">
+        <!-- OAuth Demo Landing -->
+        <div id="oauthLanding" class="oauth-demo-section">
+            <div class="oauth-card">
+                <h1><i class="fas fa-tasks"></i> TodoApp</h1>
+                <p>Bienvenido al administrador de tareas<br>
+                <small><span class="status-indicator"></span>Autenticación con Google OAuth 2.0 o credenciales tradicionales</small></p>
+                
+                <a href="/api/auth/google" class="google-connect-btn">
+                    <i class="fab fa-google"></i>
+                    Iniciar con Google
+                </a>
+                
+                <br>
+                
+                <button onclick="showTraditionalAuth()" class="demo-btn">
+                    <i class="fas fa-envelope"></i>
+                    Usar Email y Contraseña
+                </button>
+                
+                <br>
+                
+                <button onclick="demoOAuth()" class="demo-btn" style="background: #34a853; margin-top: 0.5rem;">
+                    <i class="fas fa-play"></i>
+                    Demo Mode (Sin credenciales)
+                </button>
+                
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #eee;">
+                    <small style="color: #666;">
+                        <i class="fas fa-info-circle"></i>
+                        Accede con Google OAuth o crea una cuenta tradicional
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header (oculto inicialmente) -->
+        <header class="header" id="mainHeader" style="display: none;">
+            <div class="container">
+                <div class="logo">
+                    <i class="fas fa-tasks"></i>
+                    <span>TodoApp</span>
+                </div>
+                <div class="user-menu" id="userMenu">
+                    <span id="userName"></span>
+                    <button class="btn-logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Auth Section (formularios tradicionales como fallback) -->
+        <div id="authSection" class="auth-section" style="display: none;">
+            <div class="auth-container">
+                <div class="auth-tabs">
+                    <button class="tab-btn active" onclick="showLogin()">Iniciar Sesión</button>
+                    <button class="tab-btn" onclick="showRegister()">Registrarse</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginForm" class="auth-form">
+                    <h2>Iniciar Sesión</h2>
+                    <form onsubmit="login(event)">
+                        <div class="form-group">
+                            <label for="loginEmail">Email</label>
+                            <input type="email" id="loginEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Contraseña</label>
+                            <input type="password" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Iniciar Sesión
+                        </button>
+                    </form>
+
+                    <div class="divider">
+                        <span>O continúa con</span>
+                    </div>
+
+                    <div class="oauth-buttons">
+                        <button class="btn-google" onclick="loginWithGoogle()">
+                            <i class="fab fa-google"></i>
+                            Continuar con Google
+                        </button>
+                        <button class="btn-demo" onclick="demoOAuth()">
+                            <i class="fas fa-play"></i>
+                            Demo OAuth (Sin credenciales)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="registerForm" class="auth-form" style="display: none;">
+                    <h2>Crear Cuenta</h2>
+                    <form onsubmit="register(event)">
+                        <div class="form-group">
+                            <label for="registerName">Nombre</label>
+                            <input type="text" id="registerName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerEmail">Email</label>
+                            <input type="email" id="registerEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword">Contraseña</label>
+                            <input type="password" id="registerPassword" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-user-plus"></i>
+                            Registrarse
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Section -->
+        <div id="mainApp" class="main-app" style="display: none;">
+            <div class="container">
+                <!-- Real-time Stats Section -->
+                <div class="realtime-stats">
+                    <div class="stats-card">
+                        <div class="stat-item">
+                            <i class="fas fa-users"></i>
+                            <div class="stat-content">
+                                <span class="stat-label">Usuarios Conectados</span>
+                                <span class="stat-value" id="connectedUsersCount">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-wifi" id="connectionStatus"></i>
+                            <div class="stat-content">
+                                <span class="stat-label">Estado de Conexión</span>
+                                <span class="stat-value" id="connectionStatusText">Desconectado</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="connected-users" id="connectedUsersList">
+                        <!-- Lista de usuarios conectados se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Welcome Message -->
+                <div class="welcome-section">
+                    <div class="user-welcome">
+                        <div class="user-avatar">
+                            <img id="userAvatar" src="" alt="Avatar" style="display: none; width: 50px; height: 50px; border-radius: 50%; margin-right: 15px;">
+                            <div id="userInitials" class="user-initials"></div>
+                        </div>
+                        <div class="welcome-text">
+                            <h1>¡Hola, <span id="welcomeName"></span>! 👋</h1>
+                            <p id="welcomeSubtitle">Bienvenido a tu administrador de tareas personal</p>
+                            <div class="user-info">
+                                <span id="userEmail" class="user-email"></span>
+                                <span id="userProvider" class="user-provider"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Task Form -->
+                <div class="add-task-section">
+                    <h2><i class="fas fa-plus-circle"></i> Nueva Tarea</h2>
+                    <form onsubmit="addTask(event)" class="add-task-form">
+                        <div class="task-input-group">
+                            <input type="text" id="taskTitle" placeholder="¿Qué necesitas hacer?" required>
+                            <input type="text" id="taskDescription" placeholder="Descripción adicional (opcional)">
+                            <button type="submit" class="btn-add">
+                                <i class="fas fa-plus"></i>
+                                Agregar Tarea
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tasks Section -->
+                <div class="tasks-section">
+                    <div class="tasks-header">
+                        <h2><i class="fas fa-list-check"></i> Mis Tareas</h2>
+                        <div class="tasks-stats">
+                            <span id="tasksCount">0 tareas</span>
+                            <span id="completedCount">0 completadas</span>
+                        </div>
+                    </div>
+
+                    <!-- Task Filters -->
+                    <div class="task-filters">
+                        <button class="filter-btn active" onclick="filterTasks('all')">
+                            <i class="fas fa-list"></i> Todas
+                        </button>
+                        <button class="filter-btn" onclick="filterTasks('pending')">
+                            <i class="fas fa-clock"></i> Pendientes
+                        </button>
+                        <button class="filter-btn" onclick="filterTasks('completed')">
+                            <i class="fas fa-check-circle"></i> Completadas
+                        </button>
+                    </div>
+
+                    <!-- Tasks List -->
+                    <div id="tasksList" class="tasks-list">
+                        <!-- Tasks will be dynamically loaded here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h3>No tienes tareas aún</h3>
+                        <p>¡Agrega tu primera tarea para comenzar a organizarte!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+            <div class="spinner"></div>
+            <p>Cargando...</p>
+        </div>
+
+        <!-- Alert Messages -->
+        <div id="alertContainer" class="alert-container"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

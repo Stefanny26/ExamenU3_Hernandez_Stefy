@@ -9,6 +9,7 @@ const socketServer = require('./socket/socket.server');
 // Importar rutas
 const authRoutes = require('./api/routes/auth.routes');
 const taskRoutes = require('./api/routes/task.routes');
+const questionRoutes = require('./api/routes/question.routes');
 
 // Crear aplicación Express
 const app = express();
@@ -48,6 +49,7 @@ app.use((req, res, next) => {
 // Rutas API
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/questions', questionRoutes);
 
 // Ruta de health check
 app.get('/health', (req, res) => {
@@ -67,14 +69,27 @@ app.get('/health', (req, res) => {
 app.get('/api', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Bienvenido a la API de To-Do con Arquitectura Limpia y OAuth 2.0',
+    message: 'Bienvenido a la Cola de Preguntas para Charla con OAuth 2.0',
     version: '2.0.0',
+    project: 'Cola de Preguntas para Charla',
+    description: 'Sistema en tiempo real para gestionar preguntas durante charlas y presentaciones',
     endpoints: {
       auth: {
         register: 'POST /api/auth/register',
         login: 'POST /api/auth/login',
         googleOAuth: 'GET /api/auth/google',
         profile: 'GET /api/auth/profile'
+      },
+      questions: {
+        create: 'POST /api/questions',
+        getAll: 'GET /api/questions',
+        getById: 'GET /api/questions/:id',
+        update: 'PUT /api/questions/:id',
+        delete: 'DELETE /api/questions/:id',
+        markAnswered: 'PATCH /api/questions/:id/answered',
+        vote: 'POST /api/questions/:id/vote',
+        myQuestions: 'GET /api/questions/my-questions',
+        stats: 'GET /api/questions/stats'
       },
       tasks: {
         create: 'POST /api/tasks',

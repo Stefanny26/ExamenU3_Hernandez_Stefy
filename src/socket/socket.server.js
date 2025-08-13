@@ -129,6 +129,25 @@ class SocketServer {
     socket.on('ping', () => {
       socket.emit('pong', { timestamp: new Date().toISOString() });
     });
+
+    // ===== EVENTOS ESPECÍFICOS PARA COLA DE PREGUNTAS =====
+    
+    // Usuario está escribiendo una pregunta
+    socket.on('question:typing', (data) => {
+      socket.broadcast.emit('question:typing', {
+        user: socket.user.name,
+        userId: socket.userId,
+        isTyping: data.isTyping,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Solicitud manual de actualización de preguntas
+    socket.on('questions:refresh', () => {
+      socket.emit('questions:refresh_requested', {
+        timestamp: new Date().toISOString()
+      });
+    });
   }
 
   // Métodos para emitir eventos desde controladores
@@ -184,6 +203,110 @@ class SocketServer {
     });
 
     console.log(`🗑️ Notificación enviada: ${user.name} eliminó tarea "${taskTitle}"`);
+  }
+
+  // ===== MÉTODOS PARA EVENTOS DE PREGUNTAS =====
+
+  emitQuestionCreated(question, user) {
+    if (!this.io) return;
+    
+    this.io.emit('question_created', {
+      type: 'question_created',
+      user: user.name,
+      message: `${user.name} agregó una nueva pregunta`,
+      question: {
+        id: question._id,
+        content: question.content,
+        authorName: question.authorName,
+        answered: question.answered,
+        votes: question.votes,
+        priority: question.priority,
+        createdAt: question.createdAt
+      },
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`❓ Notificación enviada: ${user.name} creó pregunta`);
+  }
+
+  emitQuestionUpdated(question, user) {
+    if (!this.io) return;
+    
+    this.io.emit('question_updated', {
+      type: 'question_updated',
+      user: user.name,
+      message: `${user.name} actualizó una pregunta`,
+      question: {
+        id: question._id,
+        content: question.content,
+        authorName: question.authorName,
+        answered: question.answered,
+        votes: question.votes,
+        priority: question.priority,
+        updatedAt: question.updatedAt
+      },
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`✏️ Notificación enviada: ${user.name} actualizó pregunta`);
+  }
+
+  emitQuestionAnswered(question, user) {
+    if (!this.io) return;
+    
+    this.io.emit('question_answered', {
+      type: 'question_answered',
+      user: user.name,
+      message: `Se respondió la pregunta de ${question.authorName}`,
+      question: {
+        id: question._id,
+        content: question.content,
+        authorName: question.authorName,
+        answered: question.answered,
+        answeredAt: question.answeredAt,
+        votes: question.votes
+      },
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`✅ Notificación enviada: Se respondió pregunta de ${question.authorName}`);
+  }
+
+  emitQuestionVoted(question, user, hasVoted) {
+    if (!this.io) return;
+    
+    const action = hasVoted ? 'votó por' : 'removió su voto de';
+    
+    this.io.emit('question_voted', {
+      type: 'question_voted',
+      user: user.name,
+      message: `${user.name} ${action} la pregunta de ${question.authorName}`,
+      question: {
+        id: question._id,
+        content: question.content,
+        authorName: question.authorName,
+        votes: question.votes,
+        hasVoted: hasVoted
+      },
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`👍 Notificación enviada: ${user.name} ${action} pregunta`);
+  }
+
+  emitQuestionDeleted(questionContent, user, questionId) {
+    if (!this.io) return;
+    
+    this.io.emit('question_deleted', {
+      type: 'question_deleted',
+      user: user.name,
+      message: `${user.name} eliminó una pregunta`,
+      questionId: questionId,
+      questionContent: questionContent.substring(0, 50) + (questionContent.length > 50 ? '...' : ''),
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`🗑️ Notificación enviada: ${user.name} eliminó pregunta`);
   }
 
   // Obtener estadísticas de conexiones
