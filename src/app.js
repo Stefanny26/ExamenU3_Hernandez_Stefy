@@ -134,7 +134,7 @@ app.use((error, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 // Iniciar servidor con Socket.IO
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
   console.log(`📱 Frontend disponible en: http://localhost:${PORT}`);
   console.log(`🔌 API disponible en: http://localhost:${PORT}/api`);
