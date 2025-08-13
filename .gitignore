@@ -14,6 +14,7 @@ yarn-error.log*
 # Pero mantener archivos de ejemplo
 !.env.example
 !.env.development
+!.env.production
 
 # Logs
 logs
@@ -98,7 +99,7 @@ dist
 
 
 # Storybook build outputs
-.out
+.out          
 .storybook-out
 
 

@@ -18,7 +18,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Conectar a base de datos
-connectDB();
+connectDB(app);
 
 // Middlewares globales
 app.use(cors({
@@ -50,6 +50,17 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/questions', questionRoutes);
+
+// Health check endpoint para Railway
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+    mongodb: req.app.locals.dbConnected ? 'connected' : 'disconnected'
+  });
+});
 
 // Ruta de health check
 app.get('/health', (req, res) => {

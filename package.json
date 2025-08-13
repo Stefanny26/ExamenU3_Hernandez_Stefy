@@ -16,7 +16,9 @@
     "check:deps": "npm outdated",
     "check:security": "npm audit",
     "docs": "echo 'Documentación disponible en ./INSTALLATION.md, ./MIGRATION.md y ./README.md'",
-    "quick-start": "npm run setup && npm run verify && echo '🚀 Todo listo! Ejecuta: npm start'"
+    "quick-start": "npm run setup && npm run verify && echo '🚀 Todo listo! Ejecuta: npm start'",
+    "build": "echo 'No build process needed'",
+    "deploy": "echo 'Deploy using Railway, Render, or Vercel'"
   },
   "keywords": [
     "nodejs",
@@ -43,5 +45,9 @@
   "devDependencies": {
     "jest": "^29.6.4",
     "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }
