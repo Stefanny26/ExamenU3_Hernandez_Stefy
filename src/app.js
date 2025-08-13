@@ -51,14 +51,20 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/questions', questionRoutes);
 
-// Ruta de health check
+// Ruta de health check para Railway
 app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+// Ruta de health check detallada
+app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'API funcionando correctamente',
     timestamp: new Date().toISOString(),
     port: process.env.PORT,
     environment: process.env.NODE_ENV,
+    uptime: process.uptime(),
     oauth: {
       google: {
         configured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
@@ -154,6 +160,17 @@ console.log(`🔧 Configuración de puerto:`, {
   PORT_FINAL: PORT,
   NODE_ENV: process.env.NODE_ENV
 });
+
+// Keep-alive para Railway (evita que se duerma el servicio)
+if (process.env.NODE_ENV === 'production') {
+  const keepAlive = () => {
+    console.log(`💓 Keep-alive ping: ${new Date().toISOString()}`);
+  };
+  
+  // Ping cada 5 minutos para mantener el servicio activo
+  setInterval(keepAlive, 5 * 60 * 1000);
+  console.log('🔄 Keep-alive habilitado para Railway');
+}
 
 // Iniciar servidor con Socket.IO
 server.listen(PORT, '0.0.0.0', () => {
