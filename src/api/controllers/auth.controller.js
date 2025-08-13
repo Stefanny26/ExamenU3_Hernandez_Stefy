@@ -61,6 +61,7 @@ class AuthController {
 
   async getProfile(req, res) {
     try {
+      console.log('👤 Solicitud de perfil para usuario:', req.user.name);
       res.status(200).json({
         success: true,
         data: {
@@ -68,6 +69,7 @@ class AuthController {
         }
       });
     } catch (error) {
+      console.error('❌ Error obteniendo perfil:', error);
       res.status(500).json({
         success: false,
         message: error.message

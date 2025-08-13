@@ -36,23 +36,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = urlParams.get('token');
     const oauthStatus = urlParams.get('oauth');
     
+    console.log('🔍 Parámetros URL:', { token: !!token, oauthStatus });
+    
     if (token) {
-        console.log('✅ Token OAuth recibido');
+        console.log('✅ Token OAuth recibido, longitud:', token.length);
         localStorage.setItem('authToken', token);
         
         // Limpiar URL
         window.history.replaceState({}, document.title, window.location.pathname);
         
+        // Verificar que el token se guardó correctamente
+        const savedToken = localStorage.getItem('authToken');
+        console.log('💾 Token guardado correctamente:', savedToken === token);
+        
         // Inicializar aplicación
         initializeApp();
     } else if (oauthStatus === 'error') {
         const errorMessage = urlParams.get('message') || 'Error en autenticación OAuth';
+        console.error('❌ Error OAuth:', errorMessage);
         showNotification(`Error: ${decodeURIComponent(errorMessage)}`, 'error');
     } else {
         // Verificar si hay token guardado
         const savedToken = localStorage.getItem('authToken');
+        console.log('🔍 Token guardado existente:', !!savedToken);
         if (savedToken) {
             initializeApp();
+        } else {
+            console.log('ℹ️ No hay token, mostrando login');
+            showLogin();
         }
     }
     
@@ -108,15 +119,29 @@ async function initializeApp() {
     try {
         console.log('🔄 Inicializando aplicación...');
         
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            throw new Error('No hay token de acceso');
+        }
+        
+        console.log('🔑 Token encontrado, verificando validez...');
+        
         // Obtener perfil del usuario
         const response = await fetchWithAuth('/api/auth/profile');
         
         if (!response.ok) {
-            throw new Error('Token inválido');
+            const errorData = await response.json();
+            console.error('❌ Error respuesta del servidor:', errorData);
+            throw new Error(errorData.message || 'Token inválido');
         }
         
         const data = await response.json();
-        currentUser = data.user;
+        
+        if (!data.success || !data.data || !data.data.user) {
+            throw new Error('Respuesta del servidor inválida');
+        }
+        
+        currentUser = data.data.user;
         
         console.log('👤 Usuario autenticado:', currentUser.name);
         
@@ -427,6 +452,13 @@ async function deleteQuestion(questionId) {
 async function fetchWithAuth(url, options = {}) {
     const token = localStorage.getItem('authToken');
     
+    if (!token) {
+        console.error('❌ No hay token de autenticación');
+        throw new Error('No hay token de autenticación');
+    }
+    
+    console.log('📡 Petición API:', { url, hasToken: !!token });
+    
     const defaultOptions = {
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -435,7 +467,16 @@ async function fetchWithAuth(url, options = {}) {
         }
     };
     
-    return fetch(url, { ...options, headers: defaultOptions.headers });
+    const response = await fetch(url, { ...options, headers: defaultOptions.headers });
+    
+    console.log('📡 Respuesta API:', { 
+        url, 
+        status: response.status, 
+        statusText: response.statusText,
+        ok: response.ok 
+    });
+    
+    return response;
 }
 
 function logout() {
