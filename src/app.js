@@ -53,7 +53,25 @@ app.use('/api/questions', questionRoutes);
 
 // Ruta de health check para Railway
 app.get('/health', (req, res) => {
-  res.status(200).send('OK');
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// Keep-alive endpoint para Railway
+app.get('/keep-alive', (req, res) => {
+  res.status(200).json({
+    alive: true,
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // Ruta de health check detallada
