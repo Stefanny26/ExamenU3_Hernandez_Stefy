@@ -1,0 +1,16 @@
+# Nixpacks configuration for Railway
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "npm-9_x"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["echo 'No build step needed for this app'"]
+
+[start]
+cmd = "node src/app.js"
+
+[variables]
+PORT = "8080"
+NODE_ENV = "production"
