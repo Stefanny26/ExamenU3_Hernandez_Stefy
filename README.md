@@ -2,7 +2,7 @@
 
 **Estudiante:** Stefanny Mishel Hernández Buenaño  
 **Proyecto:** Examen Práctico - Desarrollo Web Full Stack  
-**Institución:** Universidad Técnica del Norte  
+**Institución:** Universidad de las Fuerzas Armadas ESPE 
 **Fecha:** 13 de agosto de 2025  
 **URL Producción:** https://examenu3hernandezstefy-production.up.railway.app/
 
@@ -358,15 +358,15 @@ NODE_ENV=production          # Optimizaciones de producción
 MONGODB_URI=mongodb://mongo:***@mongodb.railway.internal:27017
 
 # Autenticación
-JWT_SECRET=4ad1c0d222bf2c5cf68d2a19cf2d13c8cbe6ac961ddd8a47b232d899735b60655bb1f8f539197d74029c5b7497c7109f3c0d50c0d09ebdb90ac8c665e89e38c3
+JWT_SECRET=Tu_JWT_SECRET
 
 # OAuth Google (configurado en Google Cloud Console)
-GOOGLE_CLIENT_ID=472262265682-***
-GOOGLE_CLIENT_SECRET=GOCSPX-***
-GOOGLE_CALLBACK_URL=https://examenu3hernandezstefy-production.up.railway.app/api/auth/google/callback
+GOOGLE_CLIENT_ID=******-***
+GOOGLE_CLIENT_SECRET=*******-***
+GOOGLE_CALLBACK_URL=https://********-production.up.railway.app/api/auth/google/callback
 
 # Frontend
-FRONTEND_URL=https://examenu3hernandezstefy-production.up.railway.app
+FRONTEND_URL=https://**********-production.up.railway.app
 ```
 
 #### **Configuración de Health Checks:**
@@ -1064,8 +1064,8 @@ app.use((req, res, next) => {
 ## 👨‍💻 Información del Desarrollador
 
 **Nombre:** Stefanny Mishel Hernández Buenaño  
-**Institución:** Universidad Técnica del Norte  
-**Carrera:** Ingeniería en Software  
+**Institución:** Universidad de las Fuerzas Armadas ESPE
+**Carrera:** Ingeniería de TI
 **Proyecto:** Examen Práctico - Desarrollo Web Full Stack  
 **Tecnologías:** Node.js, Express.js, MongoDB, Socket.IO, OAuth 2.0, JWT  
 **Deployment:** Railway.app con integración CI/CD  
